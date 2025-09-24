@@ -1,3 +1,3 @@
 # NLA-CHALLENGE
 
-bella raga lavoriamo stu sto project
+bella raga lavoriamo su sto project
