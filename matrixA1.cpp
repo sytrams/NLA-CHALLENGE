@@ -103,6 +103,13 @@ int main(...):{
       }
     
     A2.setFromTriplets(tripletList2.begin(), tripletList2.end());
+    cout << "Number of non-zeros in A2: " << A2.nonZeros() << endl;
+
+    if (A2.isApprox(A2.transpose())) {
+     std::cout << "A2 is symmetric." << std::endl;
+    } else {
+    std::cout << "A2 is not symmetric." << std::endl;
+    }
 
     sharp_vec = A2 * v; //sharping operation
 
@@ -155,6 +162,12 @@ int main(...):{
       }
     
     A3.setFromTriplets(tripletList3.begin(), tripletList3.end());
+
+    if (A3.isApprox(A3.transpose())) {
+     std::cout << "A3 is symmetric." << std::endl;
+    } else {
+     std::cout << "A3 is not symmetric." << std::endl;
+    }
 
     sobel_vec = A3 * v; //sharping operation
 
