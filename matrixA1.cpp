@@ -47,6 +47,15 @@ SparseMatrix<double> A1(width*height, width*height);
     A1.setFromTriplets(tripletList.begin(), tripletList.end());
     A1=A1/8.0;
 
+     for (int i = 0; i < height; ++i) {
+      for (int j = 0; j < width; ++j) {
+        if(smooth(i,j)<0){
+          smooth(i,j)=0;}
+        if(smooth(i,j)>1){
+          smooth(i,j)=1;}
+      }
+    }
+
     cout << "Size of A1: " << A1.rows() << "x" << A1.cols() << endl;
     cout << "Number of non-zeros in A1: " << A1.nonZeros() << endl;
 
