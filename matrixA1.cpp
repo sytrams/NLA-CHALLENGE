@@ -1,5 +1,23 @@
-//da mettere dentro l'int main
+#include <Eigen/Dense>
+#include <iostream>
+#include <cstdlib>
 
+#include <unsupported/Eigen/SparseExtra>
+#include <random>
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "stb_image_write.h"
+
+using namespace Eigen;
+using namespace std;
+using Eigen::VectorXd;
+using Eigen::MatrixXd;
+
+typedef Eigen::Triplet<double> T;
+
+//da mettere dentro l'int main
+int main(...):{
 
 SparseMatrix<double> A1(width*height, width*height);
     
