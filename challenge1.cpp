@@ -46,7 +46,7 @@ int main(int argc, char* argv[])
         int index = (i*width+j) * channels; //1 channel greyscale, 3 channels RGB
         int jump=0;
         mat(i,j)=static_cast<double>(image_data[index]);  //copy image in matrix
-        noise(i,j)= mat(i,j) + (rand() % 101) - 40;  // Add causal noise [-40,40] to the matrix
+        noise(i,j)= mat(i,j) + (rand() % 81) - 40;  // Add causal noise [-40,40] to the matrix
         v(index) = mat(i,j);
         w(index) = noise(i,j);
         if (noise(i,j)<0.0)
@@ -67,7 +67,7 @@ int main(int argc, char* argv[])
   std::cout << "Vector w has size: " << w.size() << std::endl;
 
   //Euclidean norm of v
-  std::cout << "Euclidean norm of v: " << v.norm() << std::endl;
+  std::cout << "Euclidean norm of v: " << v.norm()/255.0 << std::endl;
 
   // Free memory!!!
   stbi_image_free(image_data);
@@ -91,3 +91,4 @@ int main(int argc, char* argv[])
   
   return 0;
 }
+
