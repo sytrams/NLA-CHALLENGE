@@ -4,6 +4,9 @@
 #include <Eigen/Sparse>
 #include <unsupported/Eigen/SparseExtra>
 #include <random>
+#include <fstream>
+#include <sstream>
+#include <string>
 
 // from https://github.com/nothings/stb/tree/master
 #define STB_IMAGE_IMPLEMENTATION
@@ -18,9 +21,42 @@ using Eigen::MatrixXd;
 
 typedef Eigen::Triplet<double> T;
 
+// Function to read a MatrixMarket "vector coordinate real general" file
+VectorXd loadCoordinateVector(const string& filename) {
+    ifstream file(filename);
+    if (!file) {
+        throw runtime_error("Could not open file: " + filename);
+    }
+
+    string line;
+
+    // Skip comments (lines starting with '%')
+    do {
+        getline(file, line);
+    } while (!line.empty() && line[0] == '%');
+
+    // First non-comment line = vector size
+    istringstream iss(line);
+    int n;
+    iss >> n;
+
+    // Create a dense vector initialized with zeros
+    VectorXd vec = VectorXd::Zero(n);
+
+    // Read (index, value) pairs
+    int idx;
+    double val;
+    while (file >> idx >> val) {
+        vec(idx - 1) = val;  // MTX uses 1-based indices
+    }
+
+    return vec;
+}
+
+
 int main(int argc, char* argv[]) {
   if (argc < 2) {
-    std::cerr << "Usage: " << argv[0] << " <image_path>" << std::endl;
+    cerr << "Usage: " << argv[0] << " <image_path>" << endl;
     return 1;
   }
 
@@ -31,24 +67,24 @@ int main(int argc, char* argv[]) {
   // for greyscale images force to load only one channel
   unsigned char* image_data = stbi_load(input_image_path, &width, &height, &channels, 1);
   if (!image_data) {
-    std::cerr << "Error: Could not load image " << input_image_path
-              << std::endl;
+    cerr << "Error: Could not load image " << input_image_path
+              << endl;
     return 1;
   }
 
-  std::cout << "Image loaded: " << width << "x" << height << " with "
-            << channels << " channels." << std::endl;
+  cout << "Image loaded: " << width << "x" << height << " with "
+            << channels << " channels." << endl;
 
     // Prepare Eigen matrices for each "modification"
-    MatrixXd noise(height, width), mat(height, width), smooth(height, width), sharp(height, width), sobel(height, width);
+    MatrixXd noise(height, width), mat(height, width), smooth(height, width), sharp(height, width), sobel(height, width), matx(height, width);
     VectorXd smooth_vec(width*height), sharp_vec(width*height), sobel_vec(width*height);
     //Initialize the noise matrix with values greater than 1 to enter the while loop
 
     noise.setConstant(2.0);
     //To generate random numbers between -40 and +40
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_real_distribution<> dis(-40, +40);
+    random_device rd;
+    mt19937 gen(rd());
+    uniform_real_distribution<> dis(-40, +40);
 
     // Fill the matrices with image data
     for (int i = 0; i < height; ++i) {
@@ -70,15 +106,15 @@ int main(int argc, char* argv[]) {
   });
 
   // Save the image using stb_image_write
-  const std::string output_image_path1 = "noise_image.png";
+  const string output_image_path1 = "noise_image.png";
   if (stbi_write_png(output_image_path1.c_str(), width, height, 1,
                      noise_image.data(), width) == 0) {
-    std::cerr << "Error: Could not save grayscale image" << std::endl;
+    cerr << "Error: Could not save noise image" << endl;
 
     return 1;
   }
 
-   std::cout << "Images saved to " << output_image_path1 << std::endl;
+   cout << "Images saved to " << output_image_path1 << endl;
 
    VectorXd v(width*height); //image matrix to vector
     for(int i=0; i<height; i++){
@@ -101,7 +137,7 @@ int main(int argc, char* argv[]) {
 
     SparseMatrix<double> A1(width*height, width*height), A2(width*height, width*height), A3(width*height, width* height);
     
-    std::vector<T> tripletList;
+    vector<T> tripletList;
     tripletList.reserve(width*height);
     
       // fill the triplet list with the values for the diagonal matrix
@@ -149,17 +185,17 @@ int main(int argc, char* argv[]) {
     });
 
   // Save the image using stb_image_write
-    const std::string output_image_path2 = "smooth_image.png";
+    const string output_image_path2 = "smooth_image.png";
     if (stbi_write_png(output_image_path2.c_str(), width, height, 1,
                      smooth_image.data(), width) == 0) {
-      std::cerr << "Error: Could not save smooth image" << std::endl;
+      cerr << "Error: Could not save smooth image" << endl;
 
       return 1;
     }
 
-     std::cout << "Images saved to " << output_image_path2 << std::endl;
+     cout << "Images saved to " << output_image_path2 << endl;
 
-     std::vector<T> tripletList2;
+     vector<T> tripletList2;
     tripletList2.reserve(width*height);
     
       // fill the triplet list with the values for the diagonal matrix
@@ -183,18 +219,18 @@ int main(int argc, char* argv[]) {
     cout << "Number of non-zeros in A2: " << A2.nonZeros() << endl;
 
     if (A2.isApprox(A2.transpose())) {
-    std::cout << "A2 is symmetric." << std::endl;
+    cout << "A2 is symmetric." << endl;
     //control if definite postiive
-    Eigen::SimplicialLDLT<SparseMatrix<double>> solver;
+    SimplicialLDLT<SparseMatrix<double>> solver;
     solver.compute(A2);
     if(solver.info() != Success) {
-        std::cerr << "Decomposition failed, matrix might not be positive definite." << std::endl;
+        cerr << "Decomposition failed, matrix might not be positive definite." << endl;
     } else {
-        std::cout << "Matrix is positive definite." << std::endl;
+        cout << "Matrix is positive definite." << endl;
     }
 
 } else {
-    std::cout << "A2 is not symmetric." << std::endl;
+    cout << "A2 is not symmetric." << endl;
 }
 
     sharp_vec = A2 * v; //sharping operation
@@ -215,29 +251,75 @@ int main(int argc, char* argv[]) {
     });
 
   // Save the image using stb_image_write
-    const std::string output_image_path3 = "sharp_image.png";
+    const string output_image_path3 = "sharp_image.png";
     if (stbi_write_png(output_image_path3.c_str(), width, height, 1,
                      sharp_image.data(), width) == 0) {
-      std::cerr << "Error: Could not save sharp image" << std::endl;
+      cerr << "Error: Could not save sharp image" << endl;
 
       return 1;
     }
 
-     std::cout << "Images saved to " << output_image_path3 << std::endl;
+     cout << "Images saved to " << output_image_path3 << endl;
 
     //Export A2 and w in the .mtx format
     
 
-    if (!Eigen::saveMarket(w, "w.mtx")) {
-        std::cerr << "Error: Could not save vector w to w.mtx" << std::endl;
-        return 1;
+   // Export vector w in .mtx format
+    int n = w.size();
+    // saveMarketVector(w, "./w.mtx");
+    FILE* out = fopen("w.mtx","w");
+    fprintf(out,"%%%%MatrixMarket vector coordinate real general\n");
+    fprintf(out,"%d\n", n);
+    for (int i=0; i<n; i++) {
+        fprintf(out,"%d %f\n", i ,w(i));
     }
-    if (!Eigen::saveMarket(A2, "A2.mtx")) {
-        std::cerr << "Error: Could not save matrix A2 to A2.mtx" << std::endl;
+    fclose(out);
+
+    if (!saveMarket(A2, "A2.mtx")) {
+        cerr << "Error: Could not save matrix A2 to A2.mtx" << endl;
         return 1;
     }
 
-      std::vector<T> tripletList3;
+       // Load x.mtx into a dense VectorXd
+        VectorXd x = loadCoordinateVector("x.mtx");
+
+        cout << "Loaded vector x of size: " << x.size() << endl;
+        // x is now available in memory as a VectorXd
+
+    for(int i=0; i<height; i++){
+      for(int j=0; j<width; j++){
+        matx(i,j)=x(i*width+j);
+      }
+    }
+    //cout << matx <<endl;
+    
+    //VectorXd w_hat = A2*x;
+     // cout<< w_hat <<endl;
+
+      //cout << w <<endl;
+
+      //cout<< "Norm: "<< (w_hat-w).norm()<< endl;
+
+     Matrix<unsigned char, Dynamic, Dynamic, RowMajor> matx_image(height, width);
+  // Use Eigen's unaryExpr to map the grayscale values (0.0 to 1.0) to 0 to 255
+    matx_image = matx.unaryExpr([](double val) -> unsigned char {
+    return static_cast<unsigned char>(val * 255.0);
+    });
+
+    //cout << "matx: "<< endl << matx << endl;
+  // Save the image using stb_image_write
+    const string output_image_path5 = "matx_image.png";
+    if (stbi_write_png(output_image_path5.c_str(), width, height, 1,
+                     matx_image.data(), width) == 0) {
+      cerr << "Error: Could not save matx image" << endl;
+
+      return 1;
+    }
+
+     cout << "Images saved to " << output_image_path5 << endl;
+
+
+      vector<T> tripletList3;
     tripletList3.reserve(width*height);
     
       // fill the triplet list with the values for the diagonal matrix
@@ -262,9 +344,9 @@ int main(int argc, char* argv[]) {
     A3.setFromTriplets(tripletList3.begin(), tripletList3.end());
 
     if (A3.isApprox(A3.transpose())) {
-    std::cout << "A3 is symmetric." << std::endl;
+    cout << "A3 is symmetric." << endl;
 } else {
-    std::cout << "A3 is not symmetric." << std::endl;
+    cout << "A3 is not symmetric." << endl;
 }
 
     sobel_vec = A3 * v; //sharping operation
@@ -285,15 +367,15 @@ int main(int argc, char* argv[]) {
     });
 
   // Save the image using stb_image_write
-    const std::string output_image_path4 = "sobel_image.png";
+    const string output_image_path4 = "sobel_image.png";
     if (stbi_write_png(output_image_path4.c_str(), width, height, 1,
                      sobel_image.data(), width) == 0) {
-      std::cerr << "Error: Could not save sobel image" << std::endl;
+      cerr << "Error: Could not save sobel image" << endl;
 
       return 1;
     }
 
-     std::cout << "Images saved to " << output_image_path4 << std::endl;
+     cout << "Images saved to " << output_image_path4 << endl;
 
 
 
