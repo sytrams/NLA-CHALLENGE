@@ -74,7 +74,7 @@ int main(int argc, char* argv[]) {
     return 1;
   }
 
-  cout << "Image loaded: " << width << "x" << height << " with "
+  cout << "Image loaded: " << height << "x" << width << " with "
             << channels << " channels." << endl;
 
     // Prepare Eigen matrices for each "modification"
@@ -443,4 +443,5 @@ int main(int argc, char* argv[]) {
 
     
   return 0;
+
 }
